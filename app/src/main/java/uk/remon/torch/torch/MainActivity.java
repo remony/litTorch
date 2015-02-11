@@ -1,39 +1,27 @@
 package uk.remon.torch.torch;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.Context;
-import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.Camera;
-import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Button;
-import android.view.View.OnClickListener;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.hardware.camera2.*;
-
-import org.w3c.dom.Text;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    Button button;
-
-    public boolean torch_status = false;
-    Camera cam = Camera.open();
+    private Button button;
+    private boolean torch_status = false;
+    private Camera cam = Camera.open();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
         button = (Button) findViewById(R.id.torch_toggle);
         button.setOnClickListener(mClickListener);
@@ -48,14 +36,16 @@ public class MainActivity extends ActionBarActivity {
         public void onClick(View v) {
             try {
                 if (torch_status){
+                    //Turn off the flash
                     flashOff();
                 }   else if (!torch_status) {
+                    //Turn on the flash
                     flashOn();
                 }   else    {
                     displayToast("Error");
                 }
+                //Update the UI components
                 updateComponents();
-
             } catch (Exception e)   {
                 displayToast("Camera is in use");
             }
@@ -84,37 +74,71 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void updateComponents() {
+    /*
+                    updateComponents
+                This method is responible for changing the UI
+                elements when the torch is toggled or app is launched/resumed
+
+
+     */
+
+
+    void updateComponents() {
+        TextView t = (TextView)findViewById(R.id.header); //The on/off text
+        TextView a = (TextView)findViewById(R.id.appText); //Text throughout the whole application
+        TextView s = (TextView)findViewById(R.id.statusbar); //Status bar
+        a.setTextColor(Color.rgb(255, 255, 255));
+
+
+        //If the torch is on
         if (torch_status)   {
-            TextView t = (TextView)findViewById(R.id.header);
-            t.setText("Torch is on");
+
+            t.setText("on");
+            t.setTextColor(Color.rgb(159, 187, 88));
+            s.setBackgroundColor(Color.rgb(159, 187, 88));
+        //If the torch is not on
         } else if (!torch_status)   {
-            TextView t = (TextView)findViewById(R.id.header);
-            t.setText("Torch is off");
+            t.setText("off");
+            t.setTextColor(Color.rgb(226, 84, 64));
+            s.setBackgroundColor(Color.rgb(226, 84, 64));
+        //Or if it is something else? huh but its a boolean. just in case...
         }   else    {
             displayToast("Error");
         }
 
     }
 
-    private void flashOn()    {
-        torch_status = true;
-        Camera.Parameters p = cam.getParameters();
 
-        p.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-        cam.setParameters(p);
-        cam.startPreview();
+    //Switches the flash on the camera on
+    private void flashOn()    {
+        try {
+            torch_status = true;
+            Camera.Parameters p = cam.getParameters();
+
+            p.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            cam.setParameters(p);
+            cam.startPreview();
+        }   catch (Exception e) {
+            displayToast("Something went wrong..");
+        }
+
     }
 
     private void flashOff() {
-        torch_status = false;
-        Camera.Parameters p = cam.getParameters();
-        p.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-        cam.setParameters(p);
-        cam.startPreview();
+        try {
+            torch_status = false;
+            Camera.Parameters p = cam.getParameters();
+            p.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            cam.setParameters(p);
+            cam.startPreview();
+        }   catch (Exception e) {
+            displayToast("Something went wrong..");
+        }
+
     }
 
     private void displayToast(String message)   {
+
         Context context = getApplicationContext();
         CharSequence text = message;
         int duration = Toast.LENGTH_SHORT;
@@ -123,31 +147,37 @@ public class MainActivity extends ActionBarActivity {
         toast.show();
     }
 
+
+
+    //When the app is paused
     @Override
     public void onPause() {
-        super.onPause();  // Always call the superclass method first
+        super.onPause();
 
-        // Release the Camera because we don't need it when paused
-        // and other activities might need to use it.
         if (cam != null) {
             cam.release();
             cam = null;
         }
     }
 
+
+
+    //Wen the app is resumed
     @Override
     public void onResume() {
-        super.onResume();  // Always call the superclass method first
+        super.onResume();
 
-        // Get the Camera instance as the activity achieves full user focus
         if (cam == null) {
             torch_status = false;
-            initializeCamera(); // Local method to handle camera init
+            initializeCamera(); //Start the camera
         }
+        //Update the UI components
         updateComponents();
     }
 
-    public void initializeCamera() {
+
+    //Sets up the camera to be used by the app
+    void initializeCamera() {
         cam = Camera.open();
 
     }
